@@ -17,7 +17,7 @@ contract PasswordManager is Ownable {
         uint256 id;
     }
 
-    Account[] private accounts;
+    mapping(address => Account[] ) private accounts;
 
     modifier callerIsUser() {
         require(tx.origin == msg.sender, "[Error] Function cannot be called by a contract");
@@ -38,7 +38,7 @@ contract PasswordManager is Ownable {
 
     function generateID() internal view returns(uint256) {
         unchecked {
-            return accounts.length + 1;
+            return accounts[msg.sender].length + 1;
         }
     }
 
@@ -48,7 +48,7 @@ contract PasswordManager is Ownable {
         string calldata password
     ) public callerIsUser() onlyOwner {
         checkValues(siteName, login, password);
-        accounts.push(Account(siteName, login, password, generateID()));
+        accounts[msg.sender].push(Account(siteName, login, password, generateID()));
     }
 
     function updateAccount(
@@ -56,24 +56,47 @@ contract PasswordManager is Ownable {
         string calldata siteName, 
         string calldata login, 
         string calldata password
-    ) public callerIsUser() onlyOwner {
+    ) public callerIsUser() onlyOwner returns (bool) {
         checkValues(siteName, login, password);
-        accounts[recordID] = Account(siteName, login, password, recordID);
+        Account[] storage currentAccounts = accounts[msg.sender];
+
+        for(uint i = 0; i < currentAccounts.length; i++) {
+            if(currentAccounts[i].id == recordID) {
+                currentAccounts[i] = Account(siteName, login, password, recordID);
+            }
+        }
+        return true;
     } 
 
     function deleteAccount(
         uint256 recordID
-    ) public callerIsUser() onlyOwner {
-        delete accounts[recordID];
+    ) public callerIsUser() onlyOwner returns (bool) {
+        Account[] storage currentAccounts = accounts[msg.sender];
+        for(uint i = 0; i < currentAccounts.length; i++) {
+            if(currentAccounts[i].id == recordID) {
+                // delete currentAccounts[i];
+                for (uint j = i; j < currentAccounts.length - 1; j++) {
+                  currentAccounts[j] = currentAccounts[j+1];
+                }
+                currentAccounts.pop();
+            }
+        }
+        return true;
     } 
 
     function getAccountByID(
         uint256 recordID
     ) public view callerIsUser() onlyOwner returns (Account memory) {
-        return accounts[recordID];
-    } 
-
-    function allAccounts() public view callerIsUser() onlyOwner returns (Account[] memory) {
-        return accounts;
+        Account[] storage currentAccounts = accounts[msg.sender];
+        
+        for(uint i = 0; i < currentAccounts.length; i++) {
+            if(currentAccounts[i].id == recordID) {
+                return currentAccounts[i];
+            }
+        }
+    }
+ 
+    function allAccounts() public view callerIsUser() returns (Account[] memory) {
+        return accounts[msg.sender];
     } 
 }

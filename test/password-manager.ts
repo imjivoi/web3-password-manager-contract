@@ -59,10 +59,9 @@ describe('Password manager', function () {
     let accounts
     await passwordManager.addNewAccount('test', 'login', 'password')
     accounts = await passwordManager.allAccounts()
-
     await passwordManager.deleteAccount(accounts[0].id)
-    accounts = await passwordManager.allAccounts()
 
+    accounts = await passwordManager.allAccounts()
     expect(accounts.length).to.equal(0)
   })
 })
